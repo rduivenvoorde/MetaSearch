@@ -47,3 +47,7 @@ WCS_LINK_TYPES = [
     'urn:x-esri:specification:ServiceType:wcs:url',
     'urn:x-esri:specification:ServiceType:Gmd:URL.wcs'
 ]
+
+DATA_LINK_TYPES = [
+    'INSPIRE Atom'
+]

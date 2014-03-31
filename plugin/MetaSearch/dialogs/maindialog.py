@@ -31,6 +31,7 @@
 import json
 import os.path
 from urllib2 import build_opener, install_opener, ProxyHandler
+import feedparser
 
 from PyQt4.QtCore import QSettings, Qt, SIGNAL, SLOT
 from PyQt4.QtGui import (QApplication, QColor, QCursor, QDialog,
@@ -120,6 +121,7 @@ class MetaSearchDialog(QDialog, Ui_MetaSearchDialog):
         self.btnAddToWms.clicked.connect(self.add_to_ows)
         self.btnAddToWfs.clicked.connect(self.add_to_ows)
         self.btnAddToWcs.clicked.connect(self.add_to_ows)
+        self.btnData.clicked.connect(self.show_data)
         self.btnShowXml.clicked.connect(self.show_xml)
 
         # settings stuff
@@ -568,12 +570,13 @@ class MetaSearchDialog(QDialog, Ui_MetaSearchDialog):
             wmswmst_link_types = map(str.upper, link_types.WMSWMST_LINK_TYPES)
             wfs_link_types = map(str.upper, link_types.WFS_LINK_TYPES)
             wcs_link_types = map(str.upper, link_types.WCS_LINK_TYPES)
+            data_link_types = map(str.upper, link_types.DATA_LINK_TYPES)
 
             # if the link type exists, and it is one of the acceptable
             # interactive link types, then set
             if all([link_type is not None,
                     link_type in wmswmst_link_types + wfs_link_types +
-                    wcs_link_types]):
+                    wcs_link_types + data_link_types]):
                 if link_type in wmswmst_link_types:
                     services['wms'] = link['url']
                     self.btnAddToWms.setEnabled(True)
@@ -583,6 +586,9 @@ class MetaSearchDialog(QDialog, Ui_MetaSearchDialog):
                 if link_type in wcs_link_types:
                     services['wcs'] = link['url']
                     self.btnAddToWcs.setEnabled(True)
+                if link_type in data_link_types:
+                    services['data'] = link['url']
+                    self.btnData.setEnabled(True)
 
             set_item_data(item, 'link', json.dumps(services))
 
@@ -743,6 +749,39 @@ class MetaSearchDialog(QDialog, Ui_MetaSearchDialog):
                 ows_provider.on_cmbConnections_activated(index)
         getattr(ows_provider, connect)()
 
+    def show_data(self):
+        """parse atom feed, show polygons and click to download"""
+
+        if not self.treeRecords.selectedItems():
+            return
+        item = self.treeRecords.currentItem()
+        if not item:
+            return
+
+        item_data = json.loads(get_item_data(item, 'link'))
+        atom_url = item_data['data']
+
+        try:
+            QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+            atom = feedparser.parse(atom_url)
+        except ExceptionReport, err:
+            QApplication.restoreOverrideCursor()
+            QMessageBox.warning(self, self.tr('Atom feed error'),
+                                self.tr('Error getting response: %s' % err))
+            return
+
+        QApplication.restoreOverrideCursor()
+
+        atom.xml_url = atom_url
+        crd = RecordDialog()
+        metadata = render_template('en', self.context,
+                                   atom, 'inspire_atom_data_dc.html')
+
+        style = QgsApplication.reportStyleSheet()
+        crd.textMetadata.document().setDefaultStyleSheet(style)
+        crd.textMetadata.setHtml(metadata)
+        crd.exec_()
+
     def show_metadata(self):
         """show record metadata"""
 
@@ -802,6 +841,7 @@ class MetaSearchDialog(QDialog, Ui_MetaSearchDialog):
             self.btnAddToWms.setEnabled(False)
             self.btnAddToWfs.setEnabled(False)
             self.btnAddToWcs.setEnabled(False)
+            self.btnData.setEnabled(False)
 
         if xml:
             self.btnShowXml.setEnabled(False)

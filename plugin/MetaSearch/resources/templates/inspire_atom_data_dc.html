@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+    <head>
+        <meta charset="utf-8"/>
+        <title>{{ gettext('Downloadable data') }}</title>
+        <style type="text/css">
+            body, h3 {
+                background-color: #ffffff;
+                font-family: arial, verdana, sans-serif;
+                text-align: left;
+                float: left;
+            }
+            header {
+                display: inline-block;
+            }
+            table {
+                margin-top: 15px;
+                margin-bottom: 15px;
+            }
+            li {
+                margin-bottom: 20px;
+                font-size: 12px;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h3>{{ gettext('Data feed') }} (<a href="{{ obj['feed']['link'] }}">{{ gettext('View raw feed') }}</a>)</h3>
+        </header>
+        <section id="record-metadata">
+            <table>
+                <tr>
+                    <td><b>{{ gettext('Title') }}</b></td>
+                    <td>{{ obj['feed']['title'] }}</td>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                    <td>{{ obj['feed']['subtitle'] }}</td>
+                </tr>
+                <tr>
+                    <td><b>{{ gettext('Contact') }}</b></td>
+                    <td>{{ obj['feed']['author'] }}</td>
+                </tr>
+            </table>
+        </section>
+        <section id="links">
+            <h4>{{ gettext('Downloads') }}</h4>
+            <ul>
+            {% for entry in obj.entries %}
+                <li><a href="{{ entry['link'] }}">{{ entry['title'] }}</a><br/>
+                    {{ entry['summary'] }}<br/>
+                    {{ entry['updated'] }}<br/>
+                    {{ entry['georss_polygon'] if entry['georss_polygon'] }}
+                    {{ entry['georss_point'] if entry['georss_point'] }}
+                </li>
+            {% endfor %}
+            </ul>
+        </section>
+    </body>
+</html>
